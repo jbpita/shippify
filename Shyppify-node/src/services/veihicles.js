@@ -65,7 +65,7 @@ services.createVehicle = async ({
     } catch (error) {
         response.status = 400
         response.payload = {
-            data: vehicle,
+            data: null,
             message: error
         }
     }

@@ -21,8 +21,10 @@ const Form = ({ data, vehicle, edit, setData, setEdit }) => {
   })
 
   useEffect(() => {
+    let text = 'Registra'
     if (edit)
-      setTitleForm('Edita')
+      text = 'Edita'
+    setTitleForm(text)
   }, [edit])
 
   useEffect(() => {
@@ -57,19 +59,19 @@ const Form = ({ data, vehicle, edit, setData, setEdit }) => {
         body: JSON.stringify(values),
       })
       const response = await request.json()
-      console.log(values)
-      console.log(response.message)
-      const listUpdated = data.map(obj => (
-        obj.id === values.driver_id ?
-           obj.vehicles.map(veh => (
-            veh.id === values.id ? {...veh,...values} : veh
-          ))
-        :
-        obj
-      ))
-      console.log(listUpdated)
-      //setData(listUpdated)
-      //localStorage.setItem('lista',listUpdated)
+      //console.log(response.message)
+      const listUpdated = data.map(obj => {
+        if (obj.id === values.driver_id){
+          let Aux = obj.vehicles.map(veh => (
+                      veh.id === values.id ? {...veh,...values} : veh
+                    ))
+          obj.vehicles = Aux
+        }
+        return obj
+      })
+      console.log("lista actualizada : " , listUpdated)
+      setData(listUpdated)
+      localStorage.setItem('lista',JSON.stringify(listUpdated))
       setEdit(false)
       setValues({
         ...values,
@@ -80,9 +82,47 @@ const Form = ({ data, vehicle, edit, setData, setEdit }) => {
         capacity: '',
       })
       return
-    }
-    
+    }else{
+      const request = await fetch('http://localhost:3000/createVehicle',{
+          method: "POST",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            plate : values.plate,
+            model : values.model,
+            type : values.type,
+            driver_id : values.driver_id,
+            capacity: values.capacity
+          }),
+        })
 
+      const response = await request.json()
+      console.log(response)
+      if (response.message === "Creado correctamente"){
+        console.log("estoy")
+        const listUpdated = data.map(obj => {
+          console.log(obj.id,values)
+          if (obj.id === Number(values.driver_id)){
+            console.log("entre al if")
+            obj.vehicles.push(response.data)
+            console.log("Vehiculo creado : " , obj)
+          }
+          return obj
+        })
+        setData(listUpdated)
+        localStorage.setItem('lista',JSON.stringify(listUpdated))
+      }
+      setValues({
+        ...values,
+        id: 0,
+        plate: '',
+        model: '',
+        type: '',
+        capacity: '',
+      })
+    }
   }
 
   return (
@@ -188,6 +228,7 @@ const Form = ({ data, vehicle, edit, setData, setEdit }) => {
             required
             className="border-2 w-full p-2 mt-2 placeholder-gray-400 rounded-md"
           >
+            <option value="" disabled selected> Seleccione un conductor</option>
             {data &&
               data.map((obj) => 
                 obj.id === vehicle.driver_id ?
